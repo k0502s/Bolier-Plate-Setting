@@ -15,7 +15,7 @@ User.fineByToken(token, (err, user) => {
     //유저가 있으면 인증 완룐
     req.token = token;
     req.user = user;
-    next(); //index.js의 get으로 갈수 있게함
+    next(); //index.js의 get으로 미들웨어로서 갈수 있게함
 
 })
 

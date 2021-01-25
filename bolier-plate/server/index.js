@@ -10,9 +10,9 @@ const cookieParser = require('cookie-parser')
 
  
 app.use(bodyParser.urlencoded({extended: true}));
-
 app.use(bodyParser.json());
 app.use(cookieParser());
+
 
 
 mongoose.connect(config.mongoURI, {
@@ -21,10 +21,21 @@ mongoose.connect(config.mongoURI, {
   .catch(err => console.log(err))
 
 
+
 app.get('/', (req, res) => {
   res.send('my name is jinsoek')
 })
 
+
+app.get('/api/hello', (req, res) => {
+
+
+
+  res.send('TEST')
+})
+
+
+//회원가입
 app.post('/api/users/register', (req, res) => {
 
   const user = new User(req.body)
@@ -38,6 +49,10 @@ app.post('/api/users/register', (req, res) => {
   })
 })
 
+
+
+
+// 로그인
 app.post('/api/users/login', (req, res) => {
   //요청된 이메일을 데이터베이스에서 있는지 찾는다.
   User.findOne({email: req.body.email}, (err, user) => {
@@ -65,6 +80,9 @@ app.post('/api/users/login', (req, res) => {
      })
     })
   })
+
+
+
   
                          //미들웨어
 app.get('/api/users/auth',auth, (req, res) => {
@@ -73,7 +91,7 @@ app.get('/api/users/auth',auth, (req, res) => {
 res.status(200).json({
 _id: req.user._id,
 isAdmin: req.user.role === 0 ? false : true,
-//role 0 -> 일반 유저 role -> 0 아니면 관리자
+//role 0 -> 일반 유저 role -> 0이 아니면 관리자
 isAuth: true,
 email: req.user.email,
 name: req.user.name,
@@ -83,6 +101,9 @@ image: req.user.image
 
 })
 
+
+
+//로그아웃. 토큰을 지워버림.
 app.get('/api/users/logout', auth, (req, res) => {
 
   User.findOneAndUpdate({_id: req.user._id},

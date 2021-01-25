@@ -61,6 +61,8 @@ userSchema.pre('save', function(next){
 
 })
 
+
+//암호화된 비밀번호 비교해줌
 userSchema.methods.comparePassword = function(plainPassword, cb){
     //plainPassword 1234567  암호화 번호 $2b$10$AS1tgbgoGFXe8BZGys/5RuEwxnEKsvIBu73SJbnCYdyvu58K.erhS
   bcrypt.compare(plainPassword, this.password, function(err, isMatch){
@@ -68,6 +70,8 @@ userSchema.methods.comparePassword = function(plainPassword, cb){
       cb(null, isMatch)
   })
 }
+
+//토큰 생성해줌. 그리고 토큰 decode 해줌.
 userSchema.methods.generateToken = function(cb){
     var user = this;
     //jsonwebToken을 이용해서 token을 생성하기
@@ -79,16 +83,17 @@ userSchema.methods.generateToken = function(cb){
   })
 }
 
+
+
+//decode한 토큰을 이용햐 DB정보에 일치하는지 확인해줌. 즉 존재하는 회원인지 확인하는 작업.
 userSchema.statics.fineByToken = function(token, cb){
     var user = this;
 
-    
     //토큰을 decode 한다.
+
+    //유저 아이디를 이용해서 유저를 찾은 다음에
+    //클라이언트에서 가져온 token과 DB에 보관된 토큰이 일치하는지 확인
     jwt.verify(token, 'secretToken', function(err, decoded){ //decoded에 decode한 토큰이 담김. 즉 'secretToken'이다.
-
-
-        //유저 아이디를 이용해서 유저를 찾은 다음에
-        //클라이언트에서 가져온 token과 DB에 보관된 토큰이 일치하는지 확인
         user.findOne({"_id": decoded, "token": token}, function(err, user){
             if (err) return cb(err);
             cb(null, user)
