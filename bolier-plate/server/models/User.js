@@ -1,100 +1,94 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const saltRounds = 10;
-var jwt = require('jsonwebtoken');
- 
+const saltRounds = 10
+const jwt = require('jsonwebtoken');
+
 
 const userSchema = mongoose.Schema({
-name: {
-    type: String,
-    maxlength: 50
-},
-email: {
-    type: String,
-    trim: true,
-    unique: 1
-},
-password: {
-    type: String,
-    minlength: 5
-},
-lastname: {
-    type: String,
-    maxlengh: 50
-},
-role: {
-    type: Number,
-    default: 0
-},
-image: String,
-token: {
-    type: String
-},
-tokenExp: {
-    type: Number
-}
-
+    name: {
+        type: String,
+        maxlength: 50
+    },
+    email: {
+        type: String,
+        trim: true,
+        unique: 1
+    },
+    password: {
+        type: String,
+        minlength: 5
+    },
+    lastname: {
+        type: String,
+        maxlength: 50
+    },
+    role: {
+        type: Number,
+        default: 0
+    },
+    image: String,
+    token: {
+        type: String
+    },
+    tokenExp: {
+        type: Number
+    }
 })
 
-//pre는 몽고DB의 메소드로 레지스터에서 정보를 저장
-//전에 콜백함수를 실행 시킨다는 의미다.
-userSchema.pre('save', function(next){
-  
-    //여기서 비밀번호 암호화 한다.
 
+userSchema.pre('save', function (next) {
     var user = this;
-    //.isModified메소드를 이용하여 패스워드가 변환될때만
-    //실행되게 if문 걸어줌
-    if(user.isModified('password')){
-        bcrypt.genSalt(saltRounds, function(err, salt) {
-            if(err) return next(err)
-            bcrypt.hash(user.password, salt, function(err, hash) {
-                if(err) return next(err)
+    if (user.isModified('password')) {
+        //비밀번호를 암호화 시킨다.
+        bcrypt.genSalt(saltRounds, function (err, salt) {
+            if (err) return next(err)
+
+            bcrypt.hash(user.password, salt, function (err, hash) {
+                if (err) return next(err)
                 user.password = hash
                 next()
             })
         })
-    }
-    else{
+    } else {
         next()
     }
-
 })
 
 
-//암호화된 비밀번호 비교해줌
-userSchema.methods.comparePassword = function(plainPassword, cb){
-    //plainPassword 1234567  암호화 번호 $2b$10$AS1tgbgoGFXe8BZGys/5RuEwxnEKsvIBu73SJbnCYdyvu58K.erhS
-  bcrypt.compare(plainPassword, this.password, function(err, isMatch){
-      if(err) return cb(err);
-      cb(null, isMatch)
-  })
+userSchema.methods.comparePassword = function (plainPassword, cb) {
+
+    //plainPassword 1234567    암호회된 비밀번호 $2b$10$l492vQ0M4s9YUBfwYkkaZOgWHExahjWC
+    bcrypt.compare(plainPassword, this.password, function (err, isMatch) {
+        if (err) return cb(err);
+        cb(null, isMatch);
+    })
 }
 
-//토큰 생성해줌. 그리고 토큰 decode 해줌.
-userSchema.methods.generateToken = function(cb){
+userSchema.methods.generateToken = function (cb) {
     var user = this;
-    //jsonwebToken을 이용해서 token을 생성하기
-  var token = jwt.sign(user._id.toHexString(), 'secretToken') //toHexString()로 인해 user._id + '' = token 했음. 
-  user.token = token
-  user.save(function(err, user){
-      if(err) return cb(err);
-      cb(null, user)
-  })
+    // console.log('user._id', user._id)
+
+    // jsonwebtoken을 이용해서 token을 생성하기 
+    var token = jwt.sign(user._id.toHexString(), 'secretToken')
+    // user._id + 'secretToken' = token 
+    // -> 
+    // 'secretToken' -> user._id
+
+    user.token = token
+    user.save(function (err, user) {
+        if (err) return cb(err)
+        cb(null, user)
+    })
 }
 
-
-
-//decode한 토큰을 이용햐 DB정보에 일치하는지 확인해줌. 즉 존재하는 회원인지 확인하는 작업.
-userSchema.statics.fineByToken = function(token, cb){
+userSchema.statics.findByToken = function(token, cb) {
     var user = this;
-
-    //토큰을 decode 한다.
-
-    //유저 아이디를 이용해서 유저를 찾은 다음에
-    //클라이언트에서 가져온 token과 DB에 보관된 토큰이 일치하는지 확인
-    jwt.verify(token, 'secretToken', function(err, decoded){ //decoded에 decode한 토큰이 담김. 즉 'secretToken'이다.
-        user.findOne({"_id": decoded, "token": token}, function(err, user){
+    // user._id + ''  = token
+    //토큰을 decode 한다. 
+    jwt.verify(token, 'secretToken', function (err, decoded) {
+        //유저 아이디를 이용해서 유저를 찾은 다음에 
+        //클라이언트에서 가져온 token과 DB에 보관된 토큰이 일치하는지 확인
+        user.findOne({ "_id": decoded, "token": token }, function (err, user) {
             if (err) return cb(err);
             cb(null, user)
         })
@@ -102,6 +96,7 @@ userSchema.statics.fineByToken = function(token, cb){
 }
 
 
+
 const User = mongoose.model('User', userSchema)
 
-module.exports = {User}
+module.exports = { User }
